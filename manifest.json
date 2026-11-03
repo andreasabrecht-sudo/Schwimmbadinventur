@@ -1,13 +1,20 @@
 {
-  "background_color": "#15cfd6",
-  "dir": "ltr",
+  "name": "Schwimmbad Inventur",
+  "short_name": "Inventur",
+  "start_url": "./index.html",
   "display": "standalone",
-  "name": "InventurA",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "InventurA",
-  "start_url": "/",
-  "theme_color": "#1a2e87",
-  "id": "InventurA",
-  "lang": "de"
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
