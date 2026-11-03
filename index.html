@@ -1,0 +1,665 @@
+```html
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schwimmbad Inventur App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-cyan-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div id="headerLogoContainer" class="w-9 h-9 bg-cyan-700/60 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+                    <i class="fa-solid fa-water-ladder text-xl text-white" id="headerDefaultIcon"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-wide leading-tight" id="headerTitleText">Bad-Inventur</h1>
+                    <p class="text-[10px] text-cyan-100 hidden sm:block" id="headerSubtitleText">Schwimmbad-Bestandsmanagement</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openOrderListModal()" class="bg-cyan-700 hover:bg-cyan-800 text-white text-sm px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="orderBadgeCount" class="bg-red-500 text-white text-xs px-1.5 py-0.2 rounded-full font-bold">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[57px] z-40">
+        <div class="max-w-4xl mx-auto flex">
+            <button onclick="switchTab('inventory')" id="nav-inventory" class="flex-1 py-3 text-center text-sm font-semibold text-cyan-600 border-b-2 border-cyan-600 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Bestand</span>
+            </button>
+            <button onclick="switchTab('quickupdate')" id="nav-quickupdate" class="flex-1 py-3 text-center text-sm font-semibold text-slate-500 hover:text-slate-700 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Zählen</span>
+            </button>
+            <button onclick="switchTab('manage')" id="nav-manage" class="flex-1 py-3 text-center text-sm font-semibold text-slate-500 hover:text-slate-700 transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-gear"></i>
+                <span>Artikel</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 pb-20 overflow-y-auto">
+
+        <!-- TAB 1: INVENTORY OVERVIEW -->
+        <section id="tab-inventory" class="space-y-4">
+            <!-- Search & Filter Controls -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" oninput="renderInventory()" placeholder="Artikel suchen..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-sm">
+                </div>
+                <select id="categoryFilter" onchange="renderInventory()" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-sm">
+                    <option value="">Alle Kategorien</option>
+                    <option value="Chemie">Chemie</option>
+                    <option value="Reinigung">Reinigung</option>
+                    <option value="Werkzeug">Werkzeug</option>
+                    <option value="Sicherheit">Sicherheit</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                </select>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Artikel gesamt</p>
+                        <p id="statTotal" class="text-xl font-bold text-slate-800">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-box"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Unter Mindestbestand</p>
+                        <p id="statLow" class="text-xl font-bold text-red-600">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory List -->
+            <div id="inventoryList" class="space-y-3">
+                <!-- Dynamic content inserted via JavaScript -->
+            </div>
+        </section>
+
+        <!-- TAB 2: QUICK UPDATE -->
+        <section id="tab-quickupdate" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="font-bold text-slate-800 text-base mb-1">Schnellbestand erfassen</h2>
+                <p class="text-xs text-slate-500 mb-4">Trage hier die aktuellen Zählerstände direkt ein. Die Änderungen werden sofort gespeichert.</p>
+                
+                <div class="relative mb-4">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="quickSearchInput" oninput="renderQuickUpdate()" placeholder="Artikel filtern..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+
+                <div id="quickUpdateList" class="space-y-3 divide-y divide-slate-100">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MANAGE ARTICLES -->
+        <section id="tab-manage" class="hidden space-y-4">
+            <!-- Logo & App Settings Card -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-image text-cyan-600"></i>
+                    <span>Logo & App-Einstellungen</span>
+                </h3>
+                <form onsubmit="saveAppSettings(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Logo URL (PNG) oder SVG-Code</label>
+                        <textarea id="appLogoInput" rows="2" placeholder="https://beispiel.de/logo.png oder <svg>...</svg>" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea>
+                        <p class="text-[11px] text-slate-400 mt-1">Füge eine direkte Bild-URL (.png) oder rohen SVG-Code ein.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Schwimmbad Name</label>
+                            <input type="text" id="appNameInput" placeholder="Bad-Inventur" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Untertitel</label>
+                            <input type="text" id="appSubtitleInput" placeholder="Schwimmbad-Bestandsmanagement" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+                        Einstellungen speichern
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-slate-800 text-base" id="formTitle">Neuen Artikel anlegen</h2>
+                    <button onclick="resetArticleForm()" id="cancelEditBtn" class="hidden text-xs text-slate-500 hover:text-slate-800 underline">Abbrechen</button>
+                </div>
+                
+                <form id="articleForm" onsubmit="saveArticle(event)" class="space-y-3">
+                    <input type="hidden" id="articleId">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Artikelname</label>
+                        <input type="text" id="articleName" required placeholder="z.B. Chlorgranulat 5kg" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kategorie</label>
+                            <select id="articleCategory" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                                <option value="Chemie">Chemie</option>
+                                <option value="Reinigung">Reinigung</option>
+                                <option value="Werkzeug">Werkzeug</option>
+                                <option value="Sicherheit">Sicherheit</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Einheit</label>
+                            <select id="articleUnit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                                <option value="kg">kg</option>
+                                <option value="L">L</option>
+                                <option value="Stk">Stk</option>
+                                <option value="Kanister">Kanister</option>
+                                <option value="Sack">Sack</option>
+                                <option value="Packung">Packung</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Aktueller Bestand</label>
+                            <input type="number" step="0.1" id="articleStock" required min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Mindestbestand</label>
+                            <input type="number" step="0.1" id="articleMinStock" required min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span id="submitBtnText">Artikel speichern</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <h3 class="font-bold text-slate-800 text-sm">Datenverwaltung</h3>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button onclick="exportCSV()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-file-arrow-down"></i>
+                        <span>CSV Exportieren</span>
+                    </button>
+                    <button onclick="loadSampleData()" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium py-2 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Beispieldaten laden</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Order List / Export Modal -->
+    <div id="orderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-4 bg-cyan-600 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <h3 class="font-bold text-base">Bestellliste (Unter Mindestbestand)</h3>
+                </div>
+                <button onclick="closeOrderListModal()" class="text-white/80 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-3" id="orderModalContent">
+                <!-- Order items -->
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
+                <button onclick="copyOrderText()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium px-4 py-2 rounded-xl transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>Liste kopieren</span>
+                </button>
+                <button onclick="downloadOrderCSV()" class="bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Als CSV speichern</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-cyan-400"></i>
+        <span id="toastMessage">Erfolgreich gespeichert</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const sampleArticles = [
+            { id: '1', name: 'Chlorgranulat anorganisch', category: 'Chemie', stock: 12.5, minStock: 25.0, unit: 'kg' },
+            { id: '2', name: 'pH-Regulator Minus', category: 'Chemie', stock: 45.0, minStock: 30.0, unit: 'kg' },
+            { id: '3', name: 'Flockungsmittel flüssig', category: 'Chemie', stock: 10.0, minStock: 15.0, unit: 'L' },
+            { id: '4', name: 'Beckenbürste Profi', category: 'Werkzeug', stock: 2.0, minStock: 2.0, unit: 'Stk' },
+            { id: '5', name: 'Chlor-Testtabletten DPD 1', category: 'Chemie', stock: 4, minStock: 10, unit: 'Packung' },
+            { id: '6', name: 'Edelstahl-Grundreiniger', category: 'Reinigung', stock: 3.5, minStock: 5.0, unit: 'L' },
+            { id: '7', name: 'Rettungsring mit Leine', category: 'Sicherheit', stock: 4, minStock: 3, unit: 'Stk' }
+        ];
+
+        let articles = JSON.parse(localStorage.getItem('pool_inventory_articles')) || sampleArticles;
+        let appSettings = JSON.parse(localStorage.getItem('pool_app_settings')) || {
+            logo: '',
+            name: 'Bad-Inventur',
+            subtitle: 'Schwimmbad-Bestandsmanagement'
+        };
+
+        function saveData() {
+            localStorage.setItem('pool_inventory_articles', JSON.stringify(articles));
+            updateBadges();
+        }
+
+        function saveAppSettings(e) {
+            e.preventDefault();
+            appSettings.logo = document.getElementById('appLogoInput').value.trim();
+            appSettings.name = document.getElementById('appNameInput').value.trim() || 'Bad-Inventur';
+            appSettings.subtitle = document.getElementById('appSubtitleInput').value.trim() || 'Schwimmbad-Bestandsmanagement';
+            
+            localStorage.setItem('pool_app_settings', JSON.stringify(appSettings));
+            applyAppSettings();
+            showToast('Einstellungen gespeichert');
+        }
+
+        function applyAppSettings() {
+            document.getElementById('headerTitleText').innerText = appSettings.name;
+            document.getElementById('headerSubtitleText').innerText = appSettings.subtitle;
+            
+            document.getElementById('appNameInput').value = appSettings.name;
+            document.getElementById('appSubtitleInput').value = appSettings.subtitle;
+            document.getElementById('appLogoInput').value = appSettings.logo;
+
+            const logoContainer = document.getElementById('headerLogoContainer');
+            if (appSettings.logo) {
+                if (appSettings.logo.trim().toLowerCase().startsWith('<svg')) {
+                    logoContainer.innerHTML = appSettings.logo;
+                    const svgEl = logoContainer.querySelector('svg');
+                    if(svgEl) {
+                        svgEl.setAttribute('class', 'w-full h-full object-contain');
+                    }
+                } else {
+                    logoContainer.innerHTML = `<img src="${escapeHtml(appSettings.logo)}" alt="Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\"fa-solid fa-water-ladder text-xl text-white\"></i>';">`;
+                }
+            } else {
+                logoContainer.innerHTML = `<i class="fa-solid fa-water-ladder text-xl text-white" id="headerDefaultIcon"></i>`;
+            }
+        }
+
+        function switchTab(tabId) {
+            ['inventory', 'quickupdate', 'manage'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('nav-' + t).classList.remove('text-cyan-600', 'border-b-2', 'border-cyan-600');
+                document.getElementById('nav-' + t).classList.add('text-slate-500');
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId);
+            activeNav.classList.remove('text-slate-500');
+            activeNav.classList.add('text-cyan-600', 'border-b-2', 'border-cyan-600');
+
+            if(tabId === 'inventory') renderInventory();
+            if(tabId === 'quickupdate') renderQuickUpdate();
+        }
+
+        function renderInventory() {
+            const listEl = document.getElementById('inventoryList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+
+            const filtered = articles.filter(a => {
+                const matchesSearch = a.name.toLowerCase().includes(search);
+                const matchesCat = category === '' || a.category === category;
+                return matchesSearch && matchesCat;
+            });
+
+            document.getElementById('statTotal').innerText = articles.length;
+            const lowStockCount = articles.filter(a => Number(a.stock) < Number(a.minStock)).length;
+            document.getElementById('statLow').innerText = lowStockCount;
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-400 text-sm">
+                        <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300"></i>
+                        <p>Keine Artikel gefunden.</p>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(a => {
+                const isLow = Number(a.stock) < Number(a.minStock);
+                return `
+                    <div class="bg-white p-4 rounded-xl border ${isLow ? 'border-red-300 bg-red-50/20' : 'border-slate-200'} shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-slate-800 text-sm">${escapeHtml(a.name)}</span>
+                                ${isLow ? '<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>Mindestbestand unterschritten</span></span>' : ''}
+                            </div>
+                            <div class="flex items-center space-x-3 text-xs text-slate-500">
+                                <span class="bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-600">${escapeHtml(a.category)}</span>
+                                <span>Mindestwert: <strong>${a.minStock} ${escapeHtml(a.unit)}</strong></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between w-full sm:w-auto space-x-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                            <div class="text-left sm:text-right">
+                                <div class="text-xs text-slate-400">Bestand</div>
+                                <div class="text-base font-extrabold ${isLow ? 'text-red-600' : 'text-slate-800'}">
+                                    ${a.stock} <span class="text-xs font-normal text-slate-500">${escapeHtml(a.unit)}</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button onclick="editArticle('${a.id}')" class="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition" title="Bearbeiten">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteArticle('${a.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Löschen">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderQuickUpdate() {
+            const listEl = document.getElementById('quickUpdateList');
+            const search = document.getElementById('quickSearchInput').value.toLowerCase();
+            const filtered = articles.filter(a => a.name.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Keine Artikel gefunden.</p>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(a => {
+                const isLow = Number(a.stock) < Number(a.minStock);
+                return `
+                    <div class="py-3 flex items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <p class="font-medium text-sm text-slate-800">${escapeHtml(a.name)}</p>
+                            <p class="text-xs text-slate-400">${escapeHtml(a.category)} • Min: ${a.minStock} ${escapeHtml(a.unit)}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="adjustStock('${a.id}', -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition">-</button>
+                            <input type="number" step="0.1" id="quick-stock-${a.id}" value="${a.stock}" onchange="updateStockDirect('${a.id}', this.value)" class="w-20 text-center font-bold text-sm py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 ${isLow ? 'text-red-600 bg-red-50/50' : 'text-slate-800'}">
+                            <button onclick="adjustStock('${a.id}', 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition">+</button>
+                            <span class="text-xs text-slate-500 w-12">${escapeHtml(a.unit)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function adjustStock(id, amount) {
+            const article = articles.find(a => a.id === id);
+            if(article) {
+                let newStock = Number(article.stock) + amount;
+                if(newStock < 0) newStock = 0;
+                article.stock = Math.round(newStock * 10) / 10;
+                saveData();
+                renderQuickUpdate();
+                showToast('Bestand aktualisiert');
+            }
+        }
+
+        function updateStockDirect(id, value) {
+            const article = articles.find(a => a.id === id);
+            if(article) {
+                let newStock = parseFloat(value);
+                if(isNaN(newStock) || newStock < 0) newStock = 0;
+                article.stock = newStock;
+                saveData();
+                renderQuickUpdate();
+                showToast('Bestand gespeichert');
+            }
+        }
+
+        function saveArticle(e) {
+            e.preventDefault();
+            const id = document.getElementById('articleId').value;
+            const name = document.getElementById('articleName').value.trim();
+            const category = document.getElementById('articleCategory').value;
+            const unit = document.getElementById('articleUnit').value;
+            const stock = parseFloat(document.getElementById('articleStock').value);
+            const minStock = parseFloat(document.getElementById('articleMinStock').value);
+
+            if(id) {
+                const article = articles.find(a => a.id === id);
+                if(article) {
+                    article.name = name;
+                    article.category = category;
+                    article.unit = unit;
+                    article.stock = stock;
+                    article.minStock = minStock;
+                }
+                showToast('Artikel aktualisiert');
+            } else {
+                const newArticle = {
+                    id: Date.now().toString(),
+                    name,
+                    category,
+                    unit,
+                    stock,
+                    minStock
+                };
+                articles.push(newArticle);
+                showToast('Artikel erfolgreich erstellt');
+            }
+
+            saveData();
+            resetArticleForm();
+            switchTab('inventory');
+        }
+
+        function editArticle(id) {
+            const article = articles.find(a => a.id === id);
+            if(article) {
+                document.getElementById('articleId').value = article.id;
+                document.getElementById('articleName').value = article.name;
+                document.getElementById('articleCategory').value = article.category;
+                document.getElementById('articleUnit').value = article.unit;
+                document.getElementById('articleStock').value = article.stock;
+                document.getElementById('articleMinStock').value = article.minStock;
+
+                document.getElementById('formTitle').innerText = 'Artikel bearbeiten';
+                document.getElementById('submitBtnText').innerText = 'Änderungen speichern';
+                document.getElementById('cancelEditBtn').classList.remove('hidden');
+                
+                switchTab('manage');
+            }
+        }
+
+        function resetArticleForm() {
+            document.getElementById('articleForm').reset();
+            document.getElementById('articleId').value = '';
+            document.getElementById('formTitle').innerText = 'Neuen Artikel anlegen';
+            document.getElementById('submitBtnText').innerText = 'Artikel speichern';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function deleteArticle(id) {
+            if(confirm('Möchtest du diesen Artikel wirklich löschen?')) {
+                articles = articles.filter(a => a.id !== id);
+                saveData();
+                renderInventory();
+                showToast('Artikel gelöscht');
+            }
+        }
+
+        function loadSampleData() {
+            if(confirm('Vorhandene Daten mit Beispieldaten überschreiben?')) {
+                articles = [...sampleArticles];
+                saveData();
+                renderInventory();
+                showToast('Beispieldaten geladen');
+            }
+        }
+
+        function openOrderListModal() {
+            const lowStockItems = articles.filter(a => Number(a.stock) < Number(a.minStock));
+            const content = document.getElementById('orderModalContent');
+
+            if(lowStockItems.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-sm">
+                        <i class="fa-solid fa-circle-check text-4xl text-emerald-500 mb-2"></i>
+                        <p class="font-medium text-slate-700">Alles bestens!</p>
+                        <p class="text-xs">Keine Artikel unter dem Mindestbestand.</p>
+                    </div>`;
+            } else {
+                content.innerHTML = `
+                    <p class="text-xs text-slate-500 mb-2">Folgende Artikel haben den Mindestbestand unterschritten und sollten nachbestellt werden:</p>
+                    <div class="space-y-2">
+                        ${lowStockItems.map(a => `
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center text-sm">
+                                <div>
+                                    <span class="font-bold text-slate-800">${escapeHtml(a.name)}</span>
+                                    <div class="text-xs text-slate-500">Ist: <strong class="text-red-600">${a.stock} ${escapeHtml(a.unit)}</strong> | Mindestwert: ${a.minStock} ${escapeHtml(a.unit)}</div>
+                                </div>
+                                <span class="bg-red-100 text-red-700 font-bold text-xs px-2.5 py-1 rounded-lg">Fehlt: ${(a.minStock - a.stock).toFixed(1)} ${escapeHtml(a.unit)}</span>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
+
+            document.getElementById('orderModal').classList.remove('hidden');
+        }
+
+        function closeOrderListModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function copyOrderText() {
+            const lowStockItems = articles.filter(a => Number(a.stock) < Number(a.minStock));
+            if(lowStockItems.length === 0) return;
+
+            let text = "BESTELLLISTE SCHWIMMBAD INVENTUR\n----------------------------------\n";
+            lowStockItems.forEach(a => {
+                const missing = (a.minStock - a.stock).toFixed(1);
+                text += `- ${a.name}: ${missing} ${a.unit} nachbestellen (Aktuell: ${a.stock} ${a.unit}, Min: ${a.minStock} ${a.unit})\n`;
+            });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Bestellliste in die Zwischenablage kopiert');
+            } catch (err) {
+                showToast('Fehler beim Kopieren');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function exportCSV() {
+            let csv = 'Name,Kategorie,Bestand,Mindestbestand,Einheit\n';
+            articles.forEach(a => {
+                csv += `"${a.name}","${a.category}",${a.stock},${a.minStock},"${a.unit}"\n`;
+            });
+
+            downloadCSVFile(csv, 'schwimmbad_inventur.csv');
+            showToast('CSV Export erfolgreich');
+        }
+
+        function downloadOrderCSV() {
+            const lowStockItems = articles.filter(a => Number(a.stock) < Number(a.minStock));
+            if(lowStockItems.length === 0) return;
+
+            let csv = 'Artikel,Kategorie,Aktueller Bestand,Mindestbestand,Nachbestellmenge,Einheit\n';
+            lowStockItems.forEach(a => {
+                const missing = (a.minStock - a.stock).toFixed(1);
+                csv += `"${a.name}","${a.category}",${a.stock},${a.minStock},${missing},"${a.unit}"\n`;
+            });
+
+            downloadCSVFile(csv, 'schwimmbad_bestellliste.csv');
+            showToast('Bestellliste als CSV exportiert');
+        }
+
+        function downloadCSVFile(csvContent, filename) {
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            messageEl.innerText = message;
+            if(isError) {
+                iconEl.className = 'fa-solid fa-circle-exclamation text-red-400';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-check text-cyan-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function escapeHtml(str) {
+            return str.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#039;');
+        }
+
+        function updateBadges() {
+            const lowStockCount = articles.filter(a => Number(a.stock) < Number(a.minStock)).length;
+            const badge = document.getElementById('orderBadgeCount');
+            badge.innerText = lowStockCount;
+            if(lowStockCount > 0) {
+                badge.classList.remove('bg-slate-500');
+                badge.classList.add('bg-red-500');
+            } else {
+                badge.classList.remove('bg-red-500');
+                badge.classList.add('bg-slate-500');
+            }
+        }
+
+        window.onload = function() {
+            updateBadges();
+            applyAppSettings();
+            renderInventory();
+        }
+    </script>
+</body>
+</html>
+```
