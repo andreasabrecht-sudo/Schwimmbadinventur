@@ -1,5 +1,5 @@
 {
-  "background_color": "#17f6e9",
+  "background_color": "#15cfd6",
   "dir": "ltr",
   "display": "standalone",
   "name": "InventurA",
@@ -7,5 +7,7 @@
   "scope": "/",
   "short_name": "InventurA",
   "start_url": "/",
-  "theme_color": "#ffffff"
+  "theme_color": "#1a2e87",
+  "id": "InventurA",
+  "lang": "de"
 }
