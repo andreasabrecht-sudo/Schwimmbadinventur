@@ -1,9 +1,11 @@
 {
-  "name": "Schwimmbad Inventur",
-  "short_name": "Inventur",
-  "start_url": "./index.html",
+  "background_color": "#17f6e9",
+  "dir": "ltr",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0284c7",
-  "icons": []
+  "name": "InventurA",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "InventurA",
+  "start_url": "/",
+  "theme_color": "#ffffff"
 }
